@@ -1,0 +1,192 @@
+# Default values for edbpgai-bootstrap on Kind https://kind.sigs.k8s.io/
+system: kind
+# bootstrapImage specify the image to use for the edbpgai-bootstrap
+# Ideally you should pass this via command line.
+bootstrapImageName: docker.enterprisedb.com/pgai-platform/edbpgai-bootstrap/bootstrap-kind
+bootstrapImageTag: v2026.4.1
+
+# containerRegistryURL specify the container registry URL to use for components
+containerRegistryURL: docker.enterprisedb.com/pgai-platform
+
+# imagePullSecrets specify the image pull secrets to use for the edbpgai-bootstrap
+imagePullSecrets: ["edb-cred"]
+# backoffLimit specify the backoff limit for the edbpgai-bootstrap job
+backoffLimit: 4
+# restartPolicy specify the restart policy for the edbpgai-bootstrap job
+restartPolicy: Never
+# resources specify the resources to use for the edbpgai-bootstrap job
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+# securityContext specify the security context to use for the edbpgai-bootstrap job
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000720000
+  runAsGroup: 1000720000
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+# scenarios specify the scenarios to use, e.g. "cluster,monitoringLogging,migration"
+scenarios: ""
+# disabledComponents list all the components you don't want to install. Ideally it should be empty on Kind
+disabledComponents:
+  - upm-griptape
+# this section contains all the parameters to be replaced inside specific components,
+# for uniformity and consistency the vars in this section are lowercase and use _ in place of - when needed.
+#  - edb-migration-copilot
+#  - edb-migration-portal
+#  - pg4k-pgd-dbaas
+#  - pg4k-additional-controllers
+#  - upm-migration-assessment
+  - upm-vmagent 
+  - upm-victoria-operator
+parameters:
+  global:
+    # Variables that appy to two or more components
+    # internals backup folder for edb internal databases and velero (12 chars)
+    internal_backup_folder: a7462dbc7106
+    # Internal database backup retention period and compression method
+    internal_db_backup_retention: 30d
+    internal_db_backup_compression: gzip
+    load_balancer_mode: disabled
+    load_balancer_provider: aws
+    node_port_domain: nodeportdomain.com
+    # Domain name for the portal
+    portal_domain_name: portal.pgai.customer.aroapp.io
+    # If the customer has his own CA, they can provide the secret name here.
+    # Please following the document to create the secret.
+    # <Link is TBD>
+    # The value should not be global-ca-secret.
+    # ca_secret_name: customer-ca
+    # Storage class to be  used for the PVs
+    storage_class: standard
+    # session duration in seconds: 86400 seconds = 24 hours
+    session_duration_seconds: "86400"
+    trust_domain: "kind.enterprisedb.com"
+    dms_domain_name: transporter-rw-service.pgai.customer.aroapp.io
+    load_balancer_mode: disabled
+  upm-api-pnxt-metric:
+    log_level: info # Log level for the component in each flavour
+    tsdb_host: "dell"
+    tsdb_port: "9090"
+  upm-api-pnxt-pd:
+    log_level: info # Log level for the component in each flavour
+  upm-beacon:
+    beacon_db_hibernation: '"off"'
+    beacon_location_id: devspatcher
+    beacon_server_replicas: "1"
+    external_metrics_replicas: "1"
+    # Gilles Teste pour les certificat beacon agent 
+    server_host: "dell"
+  upm-istio-gateway:
+    # Domain name for the OCP console
+    openshift_console_domain_name: console-openshift-console.apps.customer.aroapp.io
+    # Enable server stored session
+    enable_server_session: "true"
+  upm-istio: # this is here just to retrocompatible with the current installed version. Main VS-SET is happy with just the above
+    openshift_console_domain_name: console-openshift-console.apps.customer.aroapp.io
+  upm-beaco-ff-base:
+    # Interval at which the usage collection happens
+    # Recommended value: 24h
+    # Supports 1h (represents 1 hour) to 24h (represents 24 hours)
+    usage_generator_interval: "5m"
+    # Interval at which AES keys are rotated for security
+    # Recommended value: 2160h (represents 90 days)
+    aes_key_rotation_interval: "2160h"
+  upm-beaco-usages:
+    # backward compatibility for the 1.0-appl patch release
+    usage_generator_interval: "5m"
+  upm-loki:
+    # Postgres pod log streams
+    postgres_retention: "10d"
+    # Logs from postgres adjacent operators, i.e. storage, pg4k, etc.
+    operator_retention: "5d"
+    # All the other logs
+    catchall_retention: "1d"
+    # Storage prefix for differentiating multiple HM installs using a
+    # single bucket.
+    logs_storage_prefix: "kind-logs"
+  upm-prometheus:
+    cpu: "200m"
+    # set both memory requests and limits to memory value for QOS guarantee
+    memory: "4Gi"
+    prometheus_disk_size: "10Gi"
+    prometheus_retention_size: "5GB" # Note the difference in units
+    # Thanos sidecar resources
+    sidecar_memory_request: "128Mi"
+    sidecar_memory_limit: "256Mi"
+    sidecar_cpu_request: "200m"
+  upm-thanos:
+    # sets the CPU requests for memcached used by the query frontend component
+    memcached_cpu: "500m"
+    # set both memory requests and limits to memory value for QOS guarantee
+    memcached_memory: "256Mi"
+    # sets the CPU requests for the query frontend component
+    query_frontend_cpu: "200m"
+    # set both memory requests and limits to memory value for QOS guarantee
+    query_frontend_memory: "128Mi"
+    # Thanos Receive resources
+    receive_cpu: "200m"
+    receive_memory_request: "200Mi"
+    receive_memory_limit: "400Mi"
+    # Thanos Store Gateway
+    store_cpu: "200m"
+    store_memory_request: "500Mi"
+    store_memory_limit: "700Mi"
+  upm-trust-manager:
+    # The name of the namespace where cert-manager is installed as pre-requirements.
+    cert_manager_namespace: cert-manager
+  upm-velero:
+    schedule: 0 23 * * *
+  upm-vmagent:
+    # By default, the VictoriaMetrics agent metrics collection flow is disabled
+    # in favour of Prometheus. See upm-prometheus configuration above. To enable it,
+    # set vmagent_replica_count to 1, prometheus_replica_count to 0 under upm-prometheus,
+    # and remove both upm-vmagent and upm-victoria-operator from disabledComponents.
+    #
+    vmagent_replica_count: "0"
+  edb-migration-portal:
+    enable_pdb: false
+pgai:
+  portal:
+    # the hostname of the EDB Postgres AI portal application use upm-beaco-ff-base.portal_domain_name (will be fixed in UPM-40062)
+    authentication:
+      # A list of arbitrary IdP connectors to be used for authentication
+      # The connector should be in the format of the dex connector configuration by doc
+      # https://dexidp.io/docs/connectors/
+      idpConnectors: []
+      # a list of predefined users with encrypted password for local authentication
+      staticPasswords:
+        - email: "owner@mycompany.com"
+          # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
+          hash: "$2y$10$cxLBxJLRtRJpwhxpYceaJOIvzELXythagivd39rZFayt0v4jZR8si"
+          username: "Owner MyCompany"
+          # userID must not be changed since the first time installation
+          userID: "c5998173-a605-449a-a9a5-4a9c33e26df7"
+beaconAgent:
+  beaconDBConnected: true
+  logLevel: "info"
+  provisioning:
+    nodePortDomain: "pgai.com"
+    imageDiscovery: true
+    imagesetDiscoveryContainerRegistryURL: "docker.enterprisedb.com/pgai-platform"
+    imagesetDiscoveryAllowInsecureRegistry: false
+    imagesetDiscoveryAuthenticationType: token
+    loadBalancersEnabled: false
+    operandSetVersions:
+      - 1\.1\.[0-9]+
+  providers:
+    - appliance
+  transparentDataEncryptionMethods:
+    - "passphrase"
+    - "hashicorp_vault"
+beaconServer:
+  logLevel: "info"
