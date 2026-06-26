@@ -1,6 +1,12 @@
 # Hybrid Manager on kind
 The code in this repository is used to deploy the [Hybrid Manager](https://www.enterprisedb.com/docs/edb-postgres-ai/hybrid-manager/) to a `kind` Kubernetes cluster.
 
+> [!IMPORTANT]
+> THIS README.md IS OUT OF DATE!!!
+
+
+
+
 ## Prerequisites
 - Docker. I use Docker Desktop for Mac, but plain docker or podman work as well.
 - I assigned **12 cores** and **16Gb of memory** to Docker.
