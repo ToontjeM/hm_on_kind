@@ -2,7 +2,7 @@
 
 export EDB_SUBSCRIPTION_TOKEN=`cat ${HOME}/.tokens/edb_subscription_token`
 export DOCKER_CLI_HINTS=off
-export EDB_PLATFORM_VERSION=2026.4.1
+export EDB_PLATFORM_VERSION=2026.5.1
 export AUTHENTICATION_PASSWORD='password'
 
 # Create kind cluster
